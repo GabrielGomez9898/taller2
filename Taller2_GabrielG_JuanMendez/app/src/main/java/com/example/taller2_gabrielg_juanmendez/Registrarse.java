@@ -416,7 +416,7 @@ public class Registrarse extends AppCompatActivity {
                 myRef = database.getReference(PATH_USERS + key);
                 myRef.setValue(usuario);
             }
-            Intent intent = new Intent(getBaseContext(), MainActivity.class);
+            Intent intent = new Intent(getBaseContext(), Paginaprincipal.class);
             Toast.makeText(getBaseContext(), "Registro exitoso", Toast.LENGTH_SHORT).show();
             intent.putExtra("user", currentUser.getEmail());
             loadUsersSuscripcion();
