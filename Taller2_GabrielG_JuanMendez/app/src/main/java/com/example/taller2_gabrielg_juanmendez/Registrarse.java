@@ -8,6 +8,8 @@ import androidx.core.content.ContextCompat;
 
 import android.Manifest;
 import android.app.AlertDialog;
+import android.app.DatePickerDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -16,15 +18,61 @@ import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.AuthResult;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.auth.UserProfileChangeRequest;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
+import com.squareup.picasso.Picasso;
+
+import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class Registrarse extends AppCompatActivity {
+    private FirebaseAuth mAuth;
+    private FirebaseDatabase database;
+    private DatabaseReference myRef;
+    private FirebaseUser mFUser;
+    private FirebaseFirestore mFstore;
+    private StorageReference mSotorageRef;
+
+    public static final String PATH_USERS = "users/";
+
+    private EditText mUser;
+    private EditText mUserName;
+    private EditText mPassword;
+    private EditText mNumeroIdentificacion;
+    private EditText mLatitud;
+    private EditText mLongitud;
+    private ImageView mImageView;
+    private Uri imagenUri;
+
+    private boolean imageInclude = false;
 
     int IMAGE_PICKER_REQUEST = 1;
     int REQUEST_IMAGE_CAPTURE = 2;
@@ -32,14 +80,34 @@ public class Registrarse extends AppCompatActivity {
     private int STORAGE_PERMISSION_CODE = 1;
     private int CAMERA_PERMISSION_CODE = 2;
 
-    private ImageView mImageView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_registrarse);
 
+        database = FirebaseDatabase.getInstance();
+        mAuth = FirebaseAuth.getInstance();
+        mSotorageRef = FirebaseStorage.getInstance().getReference();
+
+        Button buttonRegistrarse = (Button) findViewById(R.id.botonRegistrar);
+        mUserName = (EditText)findViewById(R.id.campoNombre);
+        mUser = (EditText)findViewById(R.id.campoEmail);
+        mPassword = (EditText)findViewById(R.id.campoContraseña);
+        mNumeroIdentificacion = (EditText) findViewById(R.id.campoIdentificacion);
+        mLatitud = (EditText)findViewById(R.id.campoLatitud);
+        mLongitud = (EditText)findViewById(R.id.campoLongitud);
         mImageView = (ImageView)findViewById(R.id.imagenPerfil);
+
+        buttonRegistrarse.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (validateForm()) {
+                    signInUser(mUser.getText().toString(), mPassword.getText().toString());
+                }
+            }
+        });
+
 
         Button botonTomarFoto = (Button) findViewById(R.id.botonTomarFoto);
         botonTomarFoto.setOnClickListener(new View.OnClickListener() {
@@ -156,8 +224,8 @@ public class Registrarse extends AppCompatActivity {
                         final Bitmap selectedImage = BitmapFactory.decodeStream(imageStream);
                         mImageView.setImageBitmap(selectedImage);
                         //mImageView.setImageURI(imageUri);
-                        //imageInclude = true;
-                        //imagenUri = imageUri;
+                        imageInclude = true;
+                        imagenUri = imageUri;
 
                     } catch (FileNotFoundException e) {
                         e.printStackTrace();
@@ -168,12 +236,159 @@ public class Registrarse extends AppCompatActivity {
                 if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
                     Bundle extras = data.getExtras();
                     Bitmap imageBitmap = (Bitmap) extras.get("data");
-                    //final Uri imageUri = getImageUri(getApplicationContext(),imageBitmap);
-                    //imageInclude = true;
+                    final Uri imageUri = getImageUri(getApplicationContext(),imageBitmap);
+                    imageInclude = true;
                     mImageView.setImageBitmap(imageBitmap);
-                    //imagenUri = imageUri;
+                    imagenUri = imageUri;
                 }
             }
         }
+    }
+    public Uri getImageUri(Context inContext, Bitmap inImage){
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        inImage.compress(Bitmap.CompressFormat.JPEG, 100, bytes);
+        String path = MediaStore.Images.Media.insertImage(inContext.getContentResolver(), inImage, "Title", null);
+        return Uri.parse(path);
+    }
+    private void uploadImageToFirebase(Uri imageUri){
+        StorageReference fileRef = mSotorageRef.child("users/"+mAuth.getCurrentUser().getUid()+"/profile.jpg");
+        fileRef.putFile(imageUri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+            @Override
+            public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                fileRef.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+                    @Override
+                    public void onSuccess(Uri uri) {
+                        Picasso.get().load(uri).into(mImageView);
+                        //Toast.makeText(Activity_Registrarse.this, "Image uploaded", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                Toast.makeText(Registrarse.this, "Failed", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+    private boolean validateForm(){
+        boolean valid = true;
+        String user = mUser.getText().toString();
+        String nombre = mUserName.getText().toString();
+        String contraseña = mPassword.getText().toString();
+        String identificacion = mNumeroIdentificacion.getText().toString();
+        String latitud = mLatitud.getText().toString();
+        String longitud = mLongitud.getText().toString();
+        if(imageInclude == false){
+            Toast.makeText(getBaseContext(), "Debe seleccionar una foto de perfil", Toast.LENGTH_SHORT).show();
+            valid = false;
+        }
+        if(TextUtils.isEmpty(user)){
+            mUserName.setError("Required");
+            valid = false;
+        }else{
+            mUserName.setError(null);
+        }
+        if(TextUtils.isEmpty(nombre)){
+            mUser.setError("Required");
+            valid = false;
+        }else{
+            mUser.setError(null);
+        }
+        if(TextUtils.isEmpty(contraseña)){
+            mPassword.setError("Required");
+            valid = false;
+        }else{
+            mPassword.setError(null);
+        }
+        return valid;
+    }
+
+    private void updateUI(FirebaseUser currentUser) throws ParseException {
+        if(currentUser != null){
+            currentUser = mAuth.getCurrentUser();
+
+            if(validateForm()) {
+                uploadImageToFirebase(imagenUri);
+                Usuario usuario = new Usuario();
+
+                usuario.setUsername(mUserName.getText().toString());
+                usuario.setName(mUser.getText().toString());
+                usuario.setContraseña(mPassword.getText().toString());
+                usuario.setNumeroIdentificacion(Long.parseLong(mNumeroIdentificacion.getText().toString()));
+                usuario.setLatitud(mLatitud.getText().toString());
+                usuario.setLongitud(mLongitud.getText().toString());
+
+                myRef = database.getReference(PATH_USERS + currentUser.getUid());
+
+                String key = myRef.push().getKey();
+                usuario.setUid(key);
+                Log.d("UID_GET",key);
+                myRef = database.getReference(PATH_USERS + key);
+                myRef.setValue(usuario);
+            }
+            Intent intent = new Intent(getBaseContext(), MainActivity.class);
+            Toast.makeText(getBaseContext(), "Registro exitoso", Toast.LENGTH_SHORT).show();
+            intent.putExtra("user", currentUser.getEmail());
+            loadUsersSuscripcion();
+            startActivity(intent);
+        }else{
+            mUserName.setText("");
+            mUser.setText("");
+            mPassword.setText("");
+            mNumeroIdentificacion.setText("");
+            mLatitud.setText("");
+            mLongitud.setText("");
+        }
+    }
+
+    private void signInUser(String email, String password){
+        mAuth.createUserWithEmailAndPassword(email, password)
+                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+                    @Override
+                    public void onComplete(@NonNull Task<AuthResult> task) {
+                        if(task.isSuccessful()){
+                            Log.d("AUTH", "createUserWithEmail:onComplete"+task.isSuccessful());
+                            FirebaseUser user = mAuth.getCurrentUser();
+                            if(user != null){
+                                UserProfileChangeRequest.Builder upcrb = new UserProfileChangeRequest.Builder();
+                                upcrb.setDisplayName(mUserName.getText().toString());
+                                user.updateProfile(upcrb.build());
+                                try {
+                                    updateUI(user);
+                                } catch (ParseException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        }
+                        if(!task.isSuccessful()){
+                            Toast.makeText(Registrarse.this, "Falló la autenticación" + task.getException().toString(),
+                                    Toast.LENGTH_SHORT).show();
+                            Log.e("", task.getException().getMessage());
+                        }
+                    }
+                });
+    }
+    public void loadUsersSuscripcion(){
+        myRef = database.getReference(PATH_USERS);
+
+        myRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                for (DataSnapshot singleSnahpshot : dataSnapshot.getChildren()) {
+                    Usuario usuario = singleSnahpshot.getValue(Usuario.class);
+
+                    Log.i("Suscripcion Usuarios", "Encontró usuario: " + usuario.getName());
+                    String name = usuario.getName();
+                    String contraseña = usuario.getContraseña();
+                    //Toast.makeText(getBaseContext(), name + " /" + contraseña, Toast.LENGTH_SHORT).show();
+
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+                Log.w("Suscripcion Usuarios", "Error en la consulta", databaseError.toException());
+            }
+        });
     }
 }
