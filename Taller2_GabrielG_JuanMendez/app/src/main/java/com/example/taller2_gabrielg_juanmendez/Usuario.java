@@ -9,16 +9,18 @@ public class Usuario {
     String uid;
     String username;
     String name;
+    String apellido;
     String contraseña;
     Long numeroIdentificacion;
-    String latitud;
-    String longitud;
+    double latitud;
+    double longitud;
 
 
-    public Usuario (String uid, String username, String name, Long numeroIdentificacion, String latitud, String longitud) {
+    public Usuario (String uid, String username, String name,String apellido, Long numeroIdentificacion, double latitud, double longitud) {
         this.uid = uid;
         this.username = username;
         this.name = name;
+        this.apellido = apellido;
         this.numeroIdentificacion = numeroIdentificacion;
         this.latitud = latitud;
         this.longitud = longitud;
@@ -86,20 +88,28 @@ public class Usuario {
         this.numeroIdentificacion = numeroIdentificacion;
     }
 
-    public String getLatitud() {
+    public double getLatitud() {
         return latitud;
     }
 
-    public void setLatitud(String latitud) {
+    public void setLatitud(double latitud) {
         this.latitud = latitud;
     }
 
-    public String getLongitud() {
+    public double getLongitud() {
         return longitud;
     }
 
-    public void setLongitud(String longitud) {
+    public void setLongitud(double longitud) {
         this.longitud = longitud;
+    }
+
+    public String getApellido() {
+        return apellido;
+    }
+
+    public void setApellido(String apellido) {
+        this.apellido = apellido;
     }
 
     public Map<String, Object> toMap(){

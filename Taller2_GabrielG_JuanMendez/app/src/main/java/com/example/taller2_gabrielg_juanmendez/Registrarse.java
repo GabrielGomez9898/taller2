@@ -15,6 +15,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
@@ -27,6 +28,11 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -66,6 +72,7 @@ public class Registrarse extends AppCompatActivity {
     private EditText mUser;
     private EditText mUserName;
     private EditText mPassword;
+    private EditText mApellido;
     private EditText mNumeroIdentificacion;
     private EditText mLatitud;
     private EditText mLongitud;
@@ -80,12 +87,21 @@ public class Registrarse extends AppCompatActivity {
     private int STORAGE_PERMISSION_CODE = 1;
     private int CAMERA_PERMISSION_CODE = 2;
 
+    private FusedLocationProviderClient mFusedLocationClient;
+    private LocationRequest mLocationRequest;
+    private LocationCallback mLocationCallback;
+    private double latitude;
+    private double longitude;
+
+    String [] location_permissions = new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION};
+    private static final int REQUEST_LOCATION = 410;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_registrarse);
-
         database = FirebaseDatabase.getInstance();
         mAuth = FirebaseAuth.getInstance();
         mSotorageRef = FirebaseStorage.getInstance().getReference();
@@ -93,11 +109,50 @@ public class Registrarse extends AppCompatActivity {
         Button buttonRegistrarse = (Button) findViewById(R.id.botonRegistrar);
         mUserName = (EditText)findViewById(R.id.campoNombre);
         mUser = (EditText)findViewById(R.id.campoEmail);
+        mApellido = (EditText)findViewById(R.id.campoApellido);
         mPassword = (EditText)findViewById(R.id.campoContraseña);
         mNumeroIdentificacion = (EditText) findViewById(R.id.campoIdentificacion);
         mLatitud = (EditText)findViewById(R.id.campoLatitud);
         mLongitud = (EditText)findViewById(R.id.campoLongitud);
         mImageView = (ImageView)findViewById(R.id.imagenPerfil);
+
+        //Location
+        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        mLocationRequest = createLocationRequest();
+        mLocationCallback = new LocationCallback() {
+            @Override
+            public void onLocationResult(LocationResult locationResult) {
+                Location location = locationResult.getLastLocation();
+                Log.i("LOCATION", "Location update in the callback: " + location);
+                if (location != null){
+                    mLatitud.setText("Latitude: " + String.valueOf(location.getLatitude()));
+                    mLongitud.setText("Longitude: " + String.valueOf(location.getLongitude()));
+                    Log.i("NOTA ", "Se actualizo");
+                }
+            }
+
+        };
+
+
+        if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED){
+            mFusedLocationClient.getLastLocation().addOnSuccessListener(this, new OnSuccessListener<Location>() {
+                @Override
+                public void onSuccess(Location location) {
+                    if (location != null){
+                        Log.i("IMPRIMIR", String.valueOf(location.getLatitude()));
+                        mLatitud.setText(String.valueOf(location.getLatitude()));
+                        mLongitud.setText(String.valueOf(location.getLongitude()));
+                    }else{
+                        Log.i("Location", "Location is null");
+                        //Active location
+                    }
+                }
+            });
+        }else{
+            ActivityCompat.requestPermissions(this, location_permissions, REQUEST_LOCATION);
+        }
+
 
         buttonRegistrarse.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -151,6 +206,16 @@ public class Registrarse extends AppCompatActivity {
         });
 
     }
+    protected LocationRequest createLocationRequest() {
+        LocationRequest locationRequest = new LocationRequest();
+        locationRequest.setInterval(10000);
+        locationRequest.setFastestInterval(5000);
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        /*LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder().addAllLocationRequests(mLocationRequest);
+        SettingsClient client = LocationServices.getSettingsClient(this);
+        Task<LocationSettingsResponse> task = client.checkLocationSettings(builder.build());*/
+        return locationRequest;
+    }
     private void requestStoragePermission(){
         if(ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_EXTERNAL_STORAGE)){
             new AlertDialog.Builder(this)
@@ -197,16 +262,39 @@ public class Registrarse extends AppCompatActivity {
         }
     }
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if (requestCode == STORAGE_PERMISSION_CODE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(this, "Permiso Concedido", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(this, "Permiso Denegado", Toast.LENGTH_SHORT).show();
-            }
-
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permisssions, @NonNull int [] grantResults){
+        super.onRequestPermissionsResult(requestCode, permisssions, grantResults);
+        switch(requestCode) {
+            case 1:
+                if (requestCode == STORAGE_PERMISSION_CODE) {
+                    if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                        Log.d("STORAGEPERMISSION", "Permiso Concedido");
+                    } else {
+                        Toast.makeText(this, "Permiso Denegado", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            case REQUEST_LOCATION:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Toast.makeText(this, "Location permissions granted", Toast.LENGTH_SHORT).show();
+                    mFusedLocationClient.getLastLocation().addOnSuccessListener(this, new OnSuccessListener<Location>() {
+                        @Override
+                        public void onSuccess(Location location) {
+                            if (location != null) {
+                                Log.i("IMPRIMIR", String.valueOf(location.getLatitude()));
+                                mLatitud.setText(String.valueOf(location.getLatitude()));
+                                mLongitud.setText(String.valueOf(location.getLongitude()));
+                            } else {
+                                //Active Location
+                            }
+                        }
+                    });
+                }else {
+                    Toast.makeText(this, "Location services were denied by the user", Toast.LENGTH_SHORT).show();
+                }
+                return;
         }
     }
+
     private void takeImage() {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);//, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
         startActivityForResult(takePictureIntent,REQUEST_IMAGE_CAPTURE);
@@ -274,6 +362,7 @@ public class Registrarse extends AppCompatActivity {
         boolean valid = true;
         String user = mUser.getText().toString();
         String nombre = mUserName.getText().toString();
+        String apellido = mApellido.getText().toString();
         String contraseña = mPassword.getText().toString();
         String identificacion = mNumeroIdentificacion.getText().toString();
         String latitud = mLatitud.getText().toString();
@@ -313,10 +402,11 @@ public class Registrarse extends AppCompatActivity {
 
                 usuario.setUsername(mUserName.getText().toString());
                 usuario.setName(mUser.getText().toString());
+                usuario.setApellido(mApellido.getText().toString());
                 usuario.setContraseña(mPassword.getText().toString());
                 usuario.setNumeroIdentificacion(Long.parseLong(mNumeroIdentificacion.getText().toString()));
-                usuario.setLatitud(mLatitud.getText().toString());
-                usuario.setLongitud(mLongitud.getText().toString());
+                usuario.setLatitud(Double.parseDouble(mLatitud.getText().toString()));
+                usuario.setLongitud(Double.parseDouble(mLongitud.getText().toString()));
 
                 myRef = database.getReference(PATH_USERS + currentUser.getUid());
 
@@ -334,6 +424,7 @@ public class Registrarse extends AppCompatActivity {
         }else{
             mUserName.setText("");
             mUser.setText("");
+            mApellido.setText("");
             mPassword.setText("");
             mNumeroIdentificacion.setText("");
             mLatitud.setText("");
