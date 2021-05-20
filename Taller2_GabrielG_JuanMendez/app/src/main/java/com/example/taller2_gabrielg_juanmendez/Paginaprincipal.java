@@ -1,17 +1,24 @@
 package com.example.taller2_gabrielg_juanmendez;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.widget.Toast;
-
+import android.widget.Toolbar;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -42,7 +49,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class Paginaprincipal extends FragmentActivity implements OnMapReadyCallback {
+public class Paginaprincipal extends FragmentActivity  implements OnMapReadyCallback  {
     private FirebaseAuth mAuth;
     private int STORAGE_PERMISSION_CODE = 1;
     private FirebaseDatabase database;
@@ -69,6 +76,7 @@ public class Paginaprincipal extends FragmentActivity implements OnMapReadyCallb
     LatLng LatLng4;
     LatLng LatLng5;
     LatLng Miubi;
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         database = FirebaseDatabase.getInstance();
@@ -252,6 +260,27 @@ public class Paginaprincipal extends FragmentActivity implements OnMapReadyCallb
             ex.printStackTrace();  return null;
         }
         return json;
+    }
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu){
+        getMenuInflater().inflate(R.menu.activity__navegation, menu);
+        return true;
+    }
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item){
+        int itemClicked = item.getItemId();
+        if(itemClicked == R.id.menuDisponible){
+            Intent intent = new Intent(this, MainActivity.class);
+            startActivity(intent);
+        }else if (itemClicked == R.id.menuListarUsuarios){
+            Intent intent = new Intent( this, MainActivity.class);
+            startActivity(intent);
+        }else if(itemClicked == R.id.menuLogOut){
+            FirebaseAuth.getInstance().signOut();
+            Intent intent = new Intent( this, MainActivity.class);
+            startActivity(intent);
+        }
+        return super.onOptionsItemSelected(item);
     }
 
 }
