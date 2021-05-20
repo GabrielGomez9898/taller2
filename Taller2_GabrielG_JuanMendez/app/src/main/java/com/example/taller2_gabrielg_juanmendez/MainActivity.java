@@ -37,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
         buttonRegistrarse.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intentRegistrate = new Intent(v.getContext(), Registrarse.class);
+                Intent intentRegistrate = new Intent(v.getContext(),Registrarse.class);
                 startActivity(intentRegistrate);
             }
         });

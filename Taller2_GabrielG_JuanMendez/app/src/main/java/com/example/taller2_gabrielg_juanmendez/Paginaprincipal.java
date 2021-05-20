@@ -16,6 +16,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.widget.Toast;
 import android.widget.Toolbar;
@@ -49,7 +50,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class Paginaprincipal extends FragmentActivity  implements OnMapReadyCallback  {
+public class Paginaprincipal extends AppCompatActivity  implements OnMapReadyCallback  {
     private FirebaseAuth mAuth;
     private int STORAGE_PERMISSION_CODE = 1;
     private FirebaseDatabase database;
