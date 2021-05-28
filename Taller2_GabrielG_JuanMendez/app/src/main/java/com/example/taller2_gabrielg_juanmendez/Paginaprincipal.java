@@ -300,8 +300,27 @@ public class Paginaprincipal extends AppCompatActivity  implements OnMapReadyCal
             };
             myRef.addListenerForSingleValueEvent(postListener);
         }else if (itemClicked == R.id.menuListarUsuarios){
-            Intent intent = new Intent( this, MainActivity.class);
-            startActivity(intent);
+            mAuth = FirebaseAuth.getInstance();
+            myRef = FirebaseDatabase.getInstance().getReference("users").child(mAuth.getUid());
+            final boolean[] aux = new boolean[1];
+            ValueEventListener postListener = new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    boolean dispo = snapshot.child("disponible").getValue(Boolean.class);
+                    if (dispo == true) {
+
+                        Intent userList = new Intent(getApplicationContext(), UsuariosDisponibles.class);
+                        startActivity(userList);
+                    } else {
+                        Toast.makeText(getBaseContext(), "Usarios visualizados disponibles", Toast.LENGTH_SHORT).show();
+                    }
+                }
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+
+                }
+            };
+            myRef.addListenerForSingleValueEvent(postListener);
         }else if(itemClicked == R.id.menuLogOut){
             FirebaseAuth.getInstance().signOut();
             Intent intent = new Intent( this, MainActivity.class);
