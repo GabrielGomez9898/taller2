@@ -412,10 +412,9 @@ public class Registrarse extends AppCompatActivity {
 
                 myRef = database.getReference(PATH_USERS + currentUser.getUid());
 
-                String key = myRef.push().getKey();
-                usuario.setUid(key);
-                Log.d("UID_GET",key);
-                myRef = database.getReference(PATH_USERS + key);
+
+                usuario.setUid(currentUser.getUid());
+
                 myRef.setValue(usuario);
             }
             Intent intent = new Intent(getBaseContext(), Paginaprincipal.class);

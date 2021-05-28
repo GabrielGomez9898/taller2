@@ -275,12 +275,14 @@ public class Paginaprincipal extends AppCompatActivity  implements OnMapReadyCal
         if(itemClicked == R.id.menuDisponible){
             mAuth = FirebaseAuth.getInstance();
             myRef = FirebaseDatabase.getInstance().getReference("users").child(mAuth.getUid());
+            Log.i("REF", String.valueOf(myRef.toString()));
             ValueEventListener postListener = new ValueEventListener() {
                 @Override
                 public void onDataChange(@NonNull DataSnapshot snapshot) {
-                    boolean dispo = snapshot.child("disponible").getValue(Boolean.class);
-                    Log.d("USPRUEBA", String.valueOf(dispo));
-                    if (dispo == true) {
+                    Log.i("GABRIEL", String.valueOf(snapshot.child("disponible")));
+                    boolean estado = snapshot.child("disponible").getValue(Boolean.class);
+
+                    if (estado == true) {
                         Toast.makeText(getBaseContext(), "Disponibilidad desactivada", Toast.LENGTH_SHORT).show();
                         pararLocation();
                         myRef.child("disponible").setValue(false);
