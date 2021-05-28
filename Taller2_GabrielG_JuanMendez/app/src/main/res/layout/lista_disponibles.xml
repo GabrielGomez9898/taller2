@@ -48,9 +48,9 @@
             android:layout_width="wrap_content"
             android:layout_height="70dp"
             android:layout_marginTop="20dp"
-            android:text="Ubicación Actual"
+            android:text="Seguir ubicacion"
             android:textSize="12dp"
-            app:backgroundTint="#CB2EAE3B" />
+            app:backgroundTint="#E22FF7" />
 
     </LinearLayout>
 

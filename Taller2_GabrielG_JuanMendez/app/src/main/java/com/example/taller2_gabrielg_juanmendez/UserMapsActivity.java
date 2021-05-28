@@ -1,15 +1,10 @@
 package com.example.taller2_gabrielg_juanmendez;
 
-import androidx.fragment.app.FragmentActivity;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.FragmentActivity;
 
-import android.app.ActivityManager;
-import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -26,12 +21,9 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
-import com.google.android.gms.maps.OnMapReadyCallback;
-
-public class MapaDisponibles extends FragmentActivity implements OnMapReadyCallback {
+public class UserMapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
-
     private FirebaseAuth mAuth;
     private DatabaseReference mDatabase;
 
@@ -50,7 +42,7 @@ public class MapaDisponibles extends FragmentActivity implements OnMapReadyCallb
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_mapa_disponibles);
+        setContentView(R.layout.activity_user_maps);
 
         mAuth = FirebaseAuth.getInstance();
 
@@ -58,13 +50,13 @@ public class MapaDisponibles extends FragmentActivity implements OnMapReadyCallb
         myMarker = null;
 
         otherUserId = getIntent().getExtras().getString("otherUserID");
+
         userLat = getIntent().getExtras().getString("userLat");
         userLong = getIntent().getExtras().getString("userLong");
         availableUserLat = getIntent().getExtras().getString("availableUserLat");
         availableUserLong = getIntent().getExtras().getString("availableUserLong");
         userSearchName = getIntent().getExtras().getString("nombre");
-        //user = new LatLng(Double.parseDouble(userLat), Double.parseDouble(userLong));
-        //userSearch = new LatLng(Double.parseDouble(availableUserLat), Double.parseDouble(availableUserLong));
+
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.mapUser);
@@ -83,23 +75,21 @@ public class MapaDisponibles extends FragmentActivity implements OnMapReadyCallb
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+
         setMyMarker();
-        setOhterUserMarker();
+        //setOhterUserMarker();
         // Add a marker in Sydney and move the camera
-        //myMarker = mMap.addMarker(new MarkerOptions().position(user).title("Tu ubicación Actual")
-        //.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
-
-
-        //mMap.addMarker(new MarkerOptions().position(userSearch).title("Ubicación de "+userSearchName));
-
+        //LatLng sydney = new LatLng(-34, 151);
+        //mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
+        //mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
     }
     private void setMyMarker(){
         mDatabase = FirebaseDatabase.getInstance().getReference("users").child(mAuth.getUid());
         mDatabase.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                double latitude = snapshot.child("latitude").getValue(Double.class);
-                double longitude = snapshot.child("longitude").getValue(Double.class);
+                double latitude = snapshot.child("latitud").getValue(Double.class);
+                double longitude = snapshot.child("longitud").getValue(Double.class);
                 user = new LatLng(latitude,longitude);
                 if(myMarker != null){
                     myMarker.remove();
@@ -116,13 +106,14 @@ public class MapaDisponibles extends FragmentActivity implements OnMapReadyCallb
             }
         });
     }
+
     private void setOhterUserMarker(){
         mDatabase = FirebaseDatabase.getInstance().getReference("users").child(otherUserId);
         mDatabase.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                double latitude = snapshot.child("latitude").getValue(Double.class);
-                double longitude = snapshot.child("longitude").getValue(Double.class);
+                double latitude = snapshot.child("latitud").getValue(Double.class);
+                double longitude = snapshot.child("longitud").getValue(Double.class);
                 userSearch = new LatLng(latitude,longitude);
                 if(markerotherUser != null){
                     markerotherUser.remove();

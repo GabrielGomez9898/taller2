@@ -87,7 +87,7 @@ public class UsuariosDisponibles extends AppCompatActivity {
             TextView nombre = (TextView) convertView.findViewById(R.id.textViewList);
             Button ubicacion = (Button) convertView.findViewById(R.id.buttonList);
 
-            nombre.setText(Usuarios.get(position).name + " " + Usuarios.get(position).name);
+            nombre.setText(Usuarios.get(position).name + " " + Usuarios.get(position).apellido);
             StorageReference profileRef = mStorageRef.child(PATH_USERS+Usuarios.get(position).uid+"/profile.jpg");
             profileRef.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
                 @Override
@@ -98,13 +98,15 @@ public class UsuariosDisponibles extends AppCompatActivity {
             ubicacion.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    Intent mapa = new Intent(v.getContext(), UsuariosDisponibles.class);
+                    Log.i("SALUDO","ENTRO A EL BOTON");
+                    Intent mapa = new Intent(v.getContext(), UserMapsActivity.class);
+                    Log.i("OTROUSUARIO",String.valueOf(Usuarios.get(position).getUid()));
                     mapa.putExtra("userLat", String.valueOf(userLat));
                     mapa.putExtra("userLong", String.valueOf(userLong));
                     mapa.putExtra("availableUserLat", String.valueOf(Usuarios.get(position).getLatitud()));
                     mapa.putExtra("availableUserLong", String.valueOf(Usuarios.get(position).getLongitud()));
                     mapa.putExtra("otherUserID", Usuarios.get(position).getUid());
-                    mapa.putExtra("nombre", Usuarios.get(position).getName() +" "+ Usuarios.get(position).getName());
+                    mapa.putExtra("nombre", Usuarios.get(position).getName() +" "+ Usuarios.get(position).getApellido());
                     startActivity(mapa);
                 }
             });
@@ -130,7 +132,6 @@ public class UsuariosDisponibles extends AppCompatActivity {
                         userLong = usuario.getLongitud();
                     }
                 }
-                Log.d("USPRUEBA", String.valueOf(size)+" / "+Usuarios.size());
                 if(size != Usuarios.size()) {
                     UsuariosCustomAdapter usuariosAdapter = new UsuariosCustomAdapter();
                     ListView usuariosListView = (ListView) findViewById(R.id.listViewUsuarios);
