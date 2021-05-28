@@ -9,6 +9,8 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 
 import android.Manifest;
+import android.app.ActivityManager;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -271,8 +273,30 @@ public class Paginaprincipal extends AppCompatActivity  implements OnMapReadyCal
     public boolean onOptionsItemSelected(MenuItem item){
         int itemClicked = item.getItemId();
         if(itemClicked == R.id.menuDisponible){
-            Intent intent = new Intent(this, MainActivity.class);
-            startActivity(intent);
+            mAuth = FirebaseAuth.getInstance();
+            myRef = FirebaseDatabase.getInstance().getReference("users").child(mAuth.getUid());
+            ValueEventListener postListener = new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    boolean dispo = snapshot.child("disponible").getValue(Boolean.class);
+                    Log.d("USPRUEBA", String.valueOf(dispo));
+                    if (dispo == true) {
+                        Toast.makeText(getBaseContext(), "Disponibilidad desactivada", Toast.LENGTH_SHORT).show();
+                        pararLocation();
+                        myRef.child("disponible").setValue(false);
+                    } else {
+                        Toast.makeText(getBaseContext(), "Disponibilidad activada", Toast.LENGTH_SHORT).show();
+                        empezarLocation();
+                        myRef.child("disponible").setValue(true);
+
+                    }
+                }
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+
+                }
+            };
+            myRef.addListenerForSingleValueEvent(postListener);
         }else if (itemClicked == R.id.menuListarUsuarios){
             Intent intent = new Intent( this, MainActivity.class);
             startActivity(intent);
@@ -282,6 +306,39 @@ public class Paginaprincipal extends AppCompatActivity  implements OnMapReadyCal
             startActivity(intent);
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private boolean isLocationServiceRunning(){
+        ActivityManager activityManager =
+                (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        if(activityManager != null){
+            for(ActivityManager.RunningServiceInfo service : activityManager.getRunningServices(Integer.MAX_VALUE)){
+                if(LocationController.class.getName().equals(service.service.getClassName())){
+                    if(service.foreground)
+                        return true;
+                }
+            }
+            return false;
+        }
+        return false;
+    }
+
+    private void empezarLocation(){
+        if(!isLocationServiceRunning()){
+            Intent intent = new Intent(getApplicationContext(), LocationController.class);
+            intent.setAction(Constantes.ACTION_START_LOCATION_SERVICE);
+            startService(intent);
+            Toast.makeText(this, "Location service stated", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void pararLocation(){
+        if(isLocationServiceRunning()){
+            Intent intent = new Intent(getApplicationContext(), LocationController.class);
+            intent.setAction(Constantes.ACTION_STOP_LOCATION_SERVICE);
+            startService(intent);
+            Toast.makeText(this, "Location service stopped", Toast.LENGTH_SHORT).show();
+        }
     }
 
 }

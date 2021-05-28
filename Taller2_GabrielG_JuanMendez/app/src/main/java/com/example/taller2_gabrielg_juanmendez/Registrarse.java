@@ -52,6 +52,7 @@ import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 import com.squareup.picasso.Picasso;
 
+
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
@@ -407,6 +408,7 @@ public class Registrarse extends AppCompatActivity {
                 usuario.setNumeroIdentificacion(Long.parseLong(mNumeroIdentificacion.getText().toString()));
                 usuario.setLatitud(Double.parseDouble(mLatitud.getText().toString()));
                 usuario.setLongitud(Double.parseDouble(mLongitud.getText().toString()));
+                usuario.setDisponible(false);
 
                 myRef = database.getReference(PATH_USERS + currentUser.getUid());
 

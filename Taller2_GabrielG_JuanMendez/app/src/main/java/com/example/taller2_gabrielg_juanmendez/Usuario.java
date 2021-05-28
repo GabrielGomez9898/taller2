@@ -14,9 +14,10 @@ public class Usuario {
     Long numeroIdentificacion;
     double latitud;
     double longitud;
+    boolean disponible;
 
 
-    public Usuario (String uid, String username, String name,String apellido, Long numeroIdentificacion, double latitud, double longitud) {
+    public Usuario (String uid, String username, String name,String apellido, Long numeroIdentificacion, double latitud, double longitud,boolean disponible) {
         this.uid = uid;
         this.username = username;
         this.name = name;
@@ -24,6 +25,7 @@ public class Usuario {
         this.numeroIdentificacion = numeroIdentificacion;
         this.latitud = latitud;
         this.longitud = longitud;
+        this.disponible = disponible;
 
 
     }
@@ -110,6 +112,14 @@ public class Usuario {
 
     public void setApellido(String apellido) {
         this.apellido = apellido;
+    }
+
+    public boolean getDisponible() {
+        return disponible;
+    }
+
+    public void setDisponible(boolean disponible) {
+        this.disponible = disponible;
     }
 
     public Map<String, Object> toMap(){
