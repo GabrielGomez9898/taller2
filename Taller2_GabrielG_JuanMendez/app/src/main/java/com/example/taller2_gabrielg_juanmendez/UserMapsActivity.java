@@ -36,7 +36,10 @@ public class UserMapsActivity extends FragmentActivity implements OnMapReadyCall
     private LatLng user;
     private LatLng userSearch;
     private String otherUserId;
-
+    public double latitude;
+    public double longitude;
+    public double latitude1;
+    public double longitude1;
     private Marker myMarker;
     private Marker markerotherUser;
 
@@ -79,6 +82,7 @@ public class UserMapsActivity extends FragmentActivity implements OnMapReadyCall
 
         setMyMarker();
         setOhterUserMarker();
+        //actualizarDistancia();
         // Add a marker in Sydney and move the camera
         //LatLng sydney = new LatLng(-34, 151);
         //mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
@@ -89,8 +93,8 @@ public class UserMapsActivity extends FragmentActivity implements OnMapReadyCall
         mDatabase.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                double latitude = snapshot.child("latitud").getValue(Double.class);
-                double longitude = snapshot.child("longitud").getValue(Double.class);
+                latitude = snapshot.child("latitud").getValue(Double.class);
+                longitude = snapshot.child("longitud").getValue(Double.class);
                 user = new LatLng(latitude,longitude);
                 if(myMarker != null){
                     myMarker.remove();
@@ -98,12 +102,9 @@ public class UserMapsActivity extends FragmentActivity implements OnMapReadyCall
                 myMarker = mMap.addMarker(new MarkerOptions().position(user).title("Tu ubicación Actual")
                         .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
 
-                availableUserLat = getIntent().getExtras().getString("availableUserLat");
-                availableUserLong = getIntent().getExtras().getString("availableUserLong");
-                //Mostrar distancia
-                double distancia = distancia(latitude,longitude,Double.parseDouble(availableUserLat),Double.parseDouble(availableUserLong));
-                String resultado = String.valueOf(distancia);
-                Toast.makeText(getBaseContext(), resultado, Toast.LENGTH_SHORT).show();
+                //Mostrar distanci
+
+
             }
 
             @Override
@@ -112,6 +113,11 @@ public class UserMapsActivity extends FragmentActivity implements OnMapReadyCall
             }
         });
     }
+    /*public void actualizarDistancia(){
+        double distancia = distancia(latitude,longitude,latitude1,longitude1);
+        String resultado = String.valueOf(distancia);
+        Toast.makeText(getBaseContext(), resultado, Toast.LENGTH_SHORT).show();
+    }*/
     public double distancia(double lat1, double long1, double lat2, double long2) {
 
         double latDistance = Math.toRadians(lat1 - lat2);
@@ -129,12 +135,17 @@ public class UserMapsActivity extends FragmentActivity implements OnMapReadyCall
         mDatabase.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                double latitude = snapshot.child("latitud").getValue(Double.class);
-                double longitude = snapshot.child("longitud").getValue(Double.class);
-                userSearch = new LatLng(latitude,longitude);
+                latitude1 = snapshot.child("latitud").getValue(Double.class);
+                longitude1 = snapshot.child("longitud").getValue(Double.class);
+                userSearch = new LatLng(latitude1,longitude1);
                 if(markerotherUser != null){
                     markerotherUser.remove();
                 }
+                //Mostrar distancia
+
+                double distancia = distancia(latitude,longitude,latitude1,longitude1);
+                String resultado = String.valueOf(distancia);
+                Toast.makeText(getBaseContext(), resultado, Toast.LENGTH_SHORT).show();
 
                 markerotherUser = mMap.addMarker(new MarkerOptions().position(userSearch).title("Ubicación de "+userSearchName));
                 mMap.moveCamera(CameraUpdateFactory.zoomTo(14));

@@ -209,6 +209,7 @@ public class Paginaprincipal extends AppCompatActivity  implements OnMapReadyCal
         showUserLocation.putExtra("otherUserID", users.get(index).getUid());
         showUserLocation.putExtra("availableUserLat", users.get(index).getLatitud());
         showUserLocation.putExtra("availableUserLong", users.get(index).getLongitud());
+        showUserLocation.putExtra("nombre",users.get(index).getName());
 
         showUserLocation.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, showUserLocation, 0);
