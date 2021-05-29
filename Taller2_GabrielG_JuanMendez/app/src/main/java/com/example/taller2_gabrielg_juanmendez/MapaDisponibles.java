@@ -110,11 +110,6 @@ public class MapaDisponibles extends FragmentActivity implements OnMapReadyCallb
                 myMarker = mMap.addMarker(new MarkerOptions().position(user).title("Tu ubicación Actual")
                         .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
 
-
-                //Mostrar distancia
-                double distancia = distancia(latitude,longitude,Double.parseDouble(availableUserLat),Double.parseDouble(availableUserLong));
-                String resultado = String.valueOf(distancia);
-                Toast.makeText(getBaseContext(), resultado, Toast.LENGTH_SHORT).show();
             }
 
             @Override
@@ -149,15 +144,5 @@ public class MapaDisponibles extends FragmentActivity implements OnMapReadyCallb
         });
 
     }
-    public double distancia(double lat1, double long1, double lat2, double long2) {
 
-        double latDistance = Math.toRadians(lat1 - lat2);
-        double lngDistance = Math.toRadians(long1 - long2);
-        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
-                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
-                * Math.sin(lngDistance / 2) * Math.sin(lngDistance / 2);
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        double result = 6.371 * c;
-        return Math.round(result*100.0)/100.0;
-    }
 }

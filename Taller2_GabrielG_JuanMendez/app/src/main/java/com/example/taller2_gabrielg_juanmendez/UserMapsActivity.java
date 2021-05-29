@@ -5,6 +5,7 @@ import androidx.fragment.app.FragmentActivity;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -96,8 +97,13 @@ public class UserMapsActivity extends FragmentActivity implements OnMapReadyCall
                 }
                 myMarker = mMap.addMarker(new MarkerOptions().position(user).title("Tu ubicación Actual")
                         .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
-                mMap.moveCamera(CameraUpdateFactory.zoomTo(14));
-                mMap.moveCamera(CameraUpdateFactory.newLatLng(user));
+
+                availableUserLat = getIntent().getExtras().getString("availableUserLat");
+                availableUserLong = getIntent().getExtras().getString("availableUserLong");
+                //Mostrar distancia
+                double distancia = distancia(latitude,longitude,Double.parseDouble(availableUserLat),Double.parseDouble(availableUserLong));
+                String resultado = String.valueOf(distancia);
+                Toast.makeText(getBaseContext(), resultado, Toast.LENGTH_SHORT).show();
             }
 
             @Override
@@ -105,6 +111,17 @@ public class UserMapsActivity extends FragmentActivity implements OnMapReadyCall
 
             }
         });
+    }
+    public double distancia(double lat1, double long1, double lat2, double long2) {
+
+        double latDistance = Math.toRadians(lat1 - lat2);
+        double lngDistance = Math.toRadians(long1 - long2);
+        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(lngDistance / 2) * Math.sin(lngDistance / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        double result = 6.371 * c;
+        return Math.round(result*100.0)/100.0;
     }
 
     private void setOhterUserMarker(){
@@ -120,9 +137,11 @@ public class UserMapsActivity extends FragmentActivity implements OnMapReadyCall
                 }
 
                 markerotherUser = mMap.addMarker(new MarkerOptions().position(userSearch).title("Ubicación de "+userSearchName));
-
+                mMap.moveCamera(CameraUpdateFactory.zoomTo(14));
+                mMap.moveCamera(CameraUpdateFactory.newLatLng(userSearch));
 
             }
+
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
