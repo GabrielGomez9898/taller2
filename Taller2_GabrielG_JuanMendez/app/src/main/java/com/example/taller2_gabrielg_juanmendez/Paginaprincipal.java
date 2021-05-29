@@ -4,12 +4,17 @@ import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 
 import android.Manifest;
 import android.app.ActivityManager;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -41,6 +46,7 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.auth.User;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
@@ -51,8 +57,17 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 
 public class Paginaprincipal extends AppCompatActivity  implements OnMapReadyCallback  {
+
+    //notificaciones
+    private static final int NOTIFICATION_CODE = 200;
+    private static final String NOTIFICATION_CHANNEL = "NOTIFICATION";
+    private String currentUserId = "";
+    private boolean initialState = true;
+    ArrayList<Usuario> users = new ArrayList<Usuario>();
+
     private FirebaseAuth mAuth;
     private int STORAGE_PERMISSION_CODE = 1;
     private FirebaseDatabase database;
@@ -67,6 +82,11 @@ public class Paginaprincipal extends AppCompatActivity  implements OnMapReadyCal
 
     String [] location_permissions = new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION};
     private static final int REQUEST_LOCATION = 410;
+    //NOTIFICACIONES
+    private static final int REQUEST_LOCATION_ACCESS_CODE = 100;
+    private static final int LOCATION_ACCESS_CODE = 101;
+
+
     public static final String PATH_USERS = "users/";
     private GoogleMap mMap;
     double[] arreglo;
@@ -79,7 +99,7 @@ public class Paginaprincipal extends AppCompatActivity  implements OnMapReadyCal
     LatLng LatLng4;
     LatLng LatLng5;
     LatLng Miubi;
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         database = FirebaseDatabase.getInstance();
@@ -137,8 +157,138 @@ public class Paginaprincipal extends AppCompatActivity  implements OnMapReadyCal
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
+        // Configurations
+
+        mAuth = FirebaseAuth.getInstance();
+        currentUserId = mAuth.getUid();
+        myRef = FirebaseDatabase.getInstance().getReference("users");
+        createNotificationChannel();
+
+        // Create listener for location in users ...
+        ValueEventListener usersListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                // Save initial state of DB
+                Log.i("FUNCION", "ENTRO AL LISTENER");
+                if (initialState) {
+                    initialState = false;
+                    for (DataSnapshot singleUser : snapshot.getChildren()) {
+                        Usuario user = singleUser.getValue( Usuario.class );
+                        users.add(user);
+                    }
+                    Log.i("STATE_I", "Entered to initialize the users in the database");
+                    return;
+                }
+                Log.i("IMPRESION", "ENTRO DESPUES DEL IF");
+                // Create notification if changed user is available now
+                short shouldStartLocationActivity = shouldCreateNotification(snapshot);
+                Log.i("STATE:", "INDEX ... " + String.valueOf(shouldStartLocationActivity));
+                if (shouldStartLocationActivity != -1) {
+                    Log.i("STATE", "USER CHANGED ITS STATUS");
+                    short index = shouldStartLocationActivity;
+                    createNotificaion(index);
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.i("STATE", "Notification:Error");
+            }
+        };
+        myRef.addValueEventListener(usersListener); // Assign the listener to a database reference
+
 
     }
+    /*-------------------------------------------NOTIFICACIONES-------------------------------------------*/
+    private void createNotificaion(int index) {
+        Log.i("SUPERTAG","ENTRO A CREAR LA NOTIFICACION");
+        // Create an explicit intent for an Activity in your app
+        Intent showUserLocation = new Intent(this, MapaDisponibles.class);
+        showUserLocation.putExtra("nombre", users.get(index).getName());
+        showUserLocation.putExtra("lat", users.get(index).getLatitud());
+        showUserLocation.putExtra("lng", users.get(index).getLongitud());
+
+        showUserLocation.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, showUserLocation, 0);
+
+        String notificationMessage = users.get(index).getName() + " ahora se encuentra disponible";
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, "Simple id channel")
+                .setSmallIcon(R.drawable.googleg_disabled_color_18)
+                .setContentTitle("Cambio de estado")
+                .setContentText(notificationMessage)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                // Set the intent that will fire when the user taps the notification
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true);
+
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(Paginaprincipal.this);
+        notificationManager.notify(1, notificationBuilder.build());
+
+    }
+
+    private void createNotificationChannel() {
+        // Create the NotificationChannel, but only on API 26+ because
+        // the NotificationChannel class is new and not in the support library
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = "NOTIFICATION";
+            String description = "NOTIFICATION";
+            int importance = NotificationManager.IMPORTANCE_DEFAULT;
+            NotificationChannel channel = new NotificationChannel(NOTIFICATION_CHANNEL, name, importance);
+            channel.setDescription(description);
+            // Register the channel with the system; you can't change the importance
+            // or other notification behaviors after this
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+        }
+    }
+    /**
+     * Function that decides if the a notification should be shown to the user
+     * @param snapshot, contains the users of the DB
+     * @return index of the user that is now available, or -1 if a user changed its state to unavailable
+     */
+    private short shouldCreateNotification(DataSnapshot snapshot) {
+        short changedUser = -1;
+        ArrayList<Usuario> changedUsers = new ArrayList<Usuario>();
+
+        // Fill changed users array
+        for (DataSnapshot singleUser : snapshot.getChildren()) {
+            Usuario user = singleUser.getValue( Usuario.class );
+            changedUsers.add( user );
+        }
+        // If a new user was registered
+        if (changedUsers.size() != users.size()) {
+            uploadUsersArray(changedUsers);
+            return (short) ((short) changedUsers.size() - 1);
+        }
+
+        // Check for users that have changed its status to available
+        for (int i = 0; i < changedUsers.size(); i++) {
+            // User have change its status to available
+            if (!changedUsers.get( i ).getDisponible() == ( users.get(i).getDisponible() ) && changedUsers.get( i ).getDisponible() == true) {
+                changedUser = (short) i;
+            }
+        }
+
+        uploadUsersArray(changedUsers);
+
+        return changedUser;
+    }
+
+    private void uploadUsersArray(ArrayList<Usuario> newUsersArray) {
+        // If a user registered
+        if (newUsersArray.size() != users.size()) {
+            users.add(newUsersArray.get( newUsersArray.size() - 1 ));
+            return;
+        }
+        // If a user state changed
+        for (int i = 0; i < newUsersArray.size(); i++) {
+            users.get(i).setDisponible(newUsersArray.get(i).getDisponible());
+        }
+    }
+
+
+
+    /*-------------------------------------------FIN NOTIFICACIONES-------------------------------------------*/
 
     /**
      * Manipulates the map once available.
