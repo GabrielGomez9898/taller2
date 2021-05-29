@@ -60,6 +60,7 @@ public class MapaDisponibles extends FragmentActivity implements OnMapReadyCallb
         otherUserId = getIntent().getExtras().getString("otherUserID");
         userLat = getIntent().getExtras().getString("userLat");
         userLong = getIntent().getExtras().getString("userLong");
+
         availableUserLat = getIntent().getExtras().getString("availableUserLat");
         availableUserLong = getIntent().getExtras().getString("availableUserLong");
         userSearchName = getIntent().getExtras().getString("nombre");

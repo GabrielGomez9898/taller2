@@ -205,10 +205,10 @@ public class Paginaprincipal extends AppCompatActivity  implements OnMapReadyCal
 
         Log.i("SUPERTAG","ENTRO A CREAR LA NOTIFICACION");
         // Create an explicit intent for an Activity in your app
-        Intent showUserLocation = new Intent(this, MapaDisponibles.class);
-        showUserLocation.putExtra("nombre", users.get(index).getName());
-        showUserLocation.putExtra("lat", users.get(index).getLatitud());
-        showUserLocation.putExtra("lng", users.get(index).getLongitud());
+        Intent showUserLocation = new Intent(this, UserMapsActivity.class);
+        showUserLocation.putExtra("otherUserID", users.get(index).getUid());
+        showUserLocation.putExtra("availableUserLat", users.get(index).getLatitud());
+        showUserLocation.putExtra("availableUserLong", users.get(index).getLongitud());
 
         showUserLocation.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, showUserLocation, 0);
@@ -221,7 +221,7 @@ public class Paginaprincipal extends AppCompatActivity  implements OnMapReadyCal
         notificationBuilder.setContentText(notificationMessage);
         notificationBuilder.setPriority(NotificationCompat.PRIORITY_DEFAULT);
                 // Set the intent that will fire when the user taps the notification
-        //notificationBuilder.setContentIntent(pendingIntent);
+        notificationBuilder.setContentIntent(pendingIntent);
         //notificationBuilder.setAutoCancel(true);
 
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(getApplicationContext());
