@@ -18,6 +18,7 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
@@ -201,6 +202,7 @@ public class Paginaprincipal extends AppCompatActivity  implements OnMapReadyCal
     }
     /*-------------------------------------------NOTIFICACIONES-------------------------------------------*/
     private void createNotificaion(int index) {
+
         Log.i("SUPERTAG","ENTRO A CREAR LA NOTIFICACION");
         // Create an explicit intent for an Activity in your app
         Intent showUserLocation = new Intent(this, MapaDisponibles.class);
@@ -212,17 +214,29 @@ public class Paginaprincipal extends AppCompatActivity  implements OnMapReadyCal
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, showUserLocation, 0);
 
         String notificationMessage = users.get(index).getName() + " ahora se encuentra disponible";
-        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, "Simple id channel")
-                .setSmallIcon(R.drawable.googleg_disabled_color_18)
-                .setContentTitle("Cambio de estado")
-                .setContentText(notificationMessage)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(getApplicationContext(),NOTIFICATION_CHANNEL);
+        notificationBuilder.setSmallIcon(R.drawable.common_google_signin_btn_icon_dark);
+        notificationBuilder.setContentTitle("NOTIFICACION DE USUARIO");
+        notificationBuilder.setColor(Color.BLUE);
+        notificationBuilder.setContentText(notificationMessage);
+        notificationBuilder.setPriority(NotificationCompat.PRIORITY_DEFAULT);
                 // Set the intent that will fire when the user taps the notification
-                .setContentIntent(pendingIntent)
-                .setAutoCancel(true);
+        //notificationBuilder.setContentIntent(pendingIntent);
+        //notificationBuilder.setAutoCancel(true);
 
-        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(Paginaprincipal.this);
-        notificationManager.notify(1, notificationBuilder.build());
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(getApplicationContext());
+        notificationManager.notify(0,notificationBuilder.build());
+
+        /*
+         NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext(),NOTIFICATION_CHANNEL);
+         builder.setSmallIcon(R.drawable.common_google_signin_btn_icon_dark);
+         builder.setContentTitle("NOTIFICACION DE USUARIO");
+         builder.setContentText("nuevo usuario activado");
+         builder.setColor(Color.BLUE);
+         builder.setPriority(NotificationCompat.PRIORITY_DEFAULT);
+
+         NotificationManagerCompat notificationManagerCompat = NotificationManagerCompat.from(getApplicationContext());
+        notificationManagerCompat.notify(0,builder.build());*/
 
     }
 
